@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amigo Oculto • Sorteador Festivo & Seguro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter e Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        coral: {
+                            50: '#FFF5F5',
+                            100: '#FFE3E3',
+                            200: '#FFC9C9',
+                            500: '#E85A4F',
+                            600: '#D6453A',
+                            700: '#B83228',
+                        },
+                        pine: {
+                            50: '#F2F7F5',
+                            100: '#E0ECE7',
+                            600: '#2D6A4F',
+                            700: '#1B4332',
+                            800: '#133124',
+                        },
+                        gold: {
+                            100: '#FEF6E4',
+                            400: '#F4A261',
+                            500: '#E9C46A',
+                            600: '#D4A338',
+                        },
+                        cream: '#FAF8F5'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FAF8F5;
+            background-image: radial-gradient(#E85A4F12 1px, transparent 1px), radial-gradient(#2D6A4F12 1px, #FAF8F5 1px);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+        .fade-in {
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-reveal {
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.92); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col selection:bg-coral-100 selection:text-coral-700">
+
+    <!-- Notificação Toast Flutuante -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Cabeçalho Principal -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="goHomeFromReveal()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-coral-600 flex items-center justify-center text-white shadow-sm shadow-coral-500/20">
+                    <i data-lucide="gift" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-lg sm:text-xl text-slate-900 leading-tight">Amigo Oculto</h1>
+                    <p class="text-[11px] font-medium text-pine-600 hidden sm:block">Sorteio Inteligente & Revelação Segura</p>
+                </div>
+            </div>
+
+            <div id="header-actions" class="flex items-center gap-2">
+                <button onclick="fillDemoData()" id="btn-demo" class="text-xs font-medium text-slate-600 hover:text-coral-600 bg-stone-100 hover:bg-coral-50 px-3 py-2 rounded-lg transition flex items-center gap-1.5" title="Preencher com dados de exemplo">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Exemplo Rápido</span>
+                </button>
+                <button onclick="openResetModal()" id="btn-reset-all" class="text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Limpar Tudo</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- MODO REVELAÇÃO POR LINK EXTERNO (Quando alguém abre o link enviado)   -->
+    <!-- ===================================================================== -->
+    <main id="external-reveal-view" class="hidden flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div class="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-stone-200/60 border border-stone-100 overflow-hidden fade-in">
+            <!-- Topo Festivo -->
+            <div class="bg-gradient-to-br from-pine-700 via-pine-600 to-pine-800 p-6 sm:p-8 text-center text-white relative overflow-hidden">
+                <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gold-500/20 blur-xl"></div>
+                <div class="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-coral-500/20 blur-xl"></div>
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm mb-3 border border-white/20">
+                    <i data-lucide="sparkles" class="w-7 h-7 text-gold-400"></i>
+                </div>
+                <p class="text-xs uppercase tracking-widest text-pine-100 font-semibold mb-1">Convite Oficial</p>
+                <h2 id="ext-event-name" class="font-display text-2xl font-extrabold leading-snug">Amigo Oculto</h2>
+                <div id="ext-event-meta" class="mt-3 flex flex-wrap justify-center gap-2 text-xs text-pine-100"></div>
+            </div>
+
+            <!-- Corpo da Revelação -->
+            <div class="p-6 sm:p-8 text-center">
+                <!-- Passo 1: Confirmação de Identidade -->
+                <div id="ext-step-confirm" class="space-y-5">
+                    <div class="bg-gold-100/70 border border-gold-400/30 rounded-2xl p-4">
+                        <p class="text-sm text-slate-600">Olá,</p>
+                        <p id="ext-giver-name" class="font-display text-2xl font-bold text-slate-900 mt-0.5">Participante</p>
+                        <p class="text-xs text-slate-500 mt-2">Certifique-se de que ninguém está olhando para a tela do seu celular antes de abrir!</p>
+                    </div>
+
+                    <button onclick="revealExternalSecret()" class="w-full py-4 px-6 bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-600 hover:to-coral-700 text-white font-display font-bold text-base rounded-2xl shadow-lg shadow-coral-500/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i data-lucide="eye" class="w-5 h-5"></i>
+                        <span>Sou eu! Revelar meu Amigo Oculto</span>
+                    </button>
+                </div>
+
+                <!-- Passo 2: Resultado Revelado -->
+                <div id="ext-step-result" class="hidden space-y-5 card-reveal">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-coral-600">Você tirou:</p>
+                    <div class="bg-gradient-to-b from-coral-50 to-white border-2 border-coral-200 rounded-2xl p-6 shadow-inner">
+                        <div class="w-14 h-14 mx-auto rounded-full bg-coral-100 text-coral-600 flex items-center justify-center mb-3">
+                            <i data-lucide="gift" class="w-7 h-7"></i>
+                        </div>
+                        <h3 id="ext-receiver-name" class="font-display text-3xl font-extrabold text-slate-900 break-words">Nome</h3>
+
+                        <div id="ext-wish-box" class="mt-4 pt-4 border-t border-coral-200/60 text-left hidden">
+                            <p class="text-xs font-semibold text-pine-700 flex items-center gap-1.5 mb-1">
+                                <i data-lucide="heart" class="w-3.5 h-3.5 text-coral-500"></i>
+                                <span>Dica de presente / Desejo:</span>
+                            </p>
+                            <p id="ext-receiver-wish" class="text-sm text-slate-700 bg-white p-3 rounded-xl border border-stone-200/80 italic"></p>
+                        </div>
+                    </div>
+
+                    <div id="ext-notes-box" class="hidden text-left bg-stone-50 p-3.5 rounded-xl border border-stone-200/70 text-xs text-slate-600">
+                        <span class="font-semibold text-slate-800 block mb-0.5">Observações do evento:</span>
+                        <span id="ext-event-notes"></span>
+                    </div>
+
+                    <div class="pt-2 flex flex-col gap-2">
+                        <button onclick="hideExternalSecret()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2">
+                            <i data-lucide="eye-off" class="w-4 h-4"></i>
+                            <span>Ocultar Tela Novamente</span>
+                        </button>
+                        <button onclick="goHomeFromReveal()" class="text-xs text-slate-400 hover:text-coral-600 py-2 transition">
+                            Criar meu próprio sorteio de Amigo Oculto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODO ORGANIZADOR (Configuração, Participantes, Restrições e Sorteio)  -->
+    <!-- ===================================================================== -->
+    <main id="organizer-view" class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+        <!-- Navegação por Etapas (Stepper) -->
+        <div class="bg-white rounded-2xl p-2 shadow-sm border border-stone-200/80 grid grid-cols-3 gap-1.5">
+            <button onclick="switchTab('setup')" id="tab-setup" class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 bg-coral-50 text-coral-700 border border-coral-200/70">
+                <span class="w-5 h-5 rounded-full bg-coral-500 text-white text-[11px] flex items-center justify-center font-bold">1</span>
+                <span>Evento & Regras</span>
+            </button>
+            <button onclick="switchTab('participants')" id="tab-participants" class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-600 hover:bg-stone-50">
+                <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[11px] flex items-center justify-center font-bold">2</span>
+                <span>Participantes <span id="badge-count" class="ml-0.5 px-1.5 py-0.2 bg-stone-200/80 text-slate-700 rounded-full text-[11px]">0</span></span>
+            </button>
+            <button onclick="switchTab('results')" id="tab-results" class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-600 hover:bg-stone-50">
+                <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[11px] flex items-center justify-center font-bold">3</span>
+                <span>Sorteio & Revelar</span>
+            </button>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- ETAPA 1: DETALHES DO EVENTO                                     -->
+        <!-- =============================================================== -->
+        <section id="section-setup" class="fade-in space-y-6">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-stone-200/80">
+                <div class="flex items-start justify-between gap-4 mb-6">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-pine-700 bg-pine-50 px-3 py-1 rounded-full mb-2">
+                            <i data-lucide="calendar-heart" class="w-3.5 h-3.5"></i> Passo 1 de 3
+                        </span>
+                        <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-900">Detalhes da Confraternização</h2>
+                        <p class="text-sm text-slate-500 mt-1">Essas informações aparecerão no cartão de revelação de cada participante.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Nome do Evento *</label>
+                        <input type="text" id="event-name" oninput="saveEventDetails()" placeholder="Ex: Amigo Oculto da Família Silva 2026"
+                            class="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition text-sm font-medium">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Data do Encontro</label>
+                        <input type="date" id="event-date" onchange="saveEventDetails()"
+                            class="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Valor Sugerido do Presente</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">R$</span>
+                            <input type="text" id="event-budget" oninput="saveEventDetails()" placeholder="Ex: 50,00 a 80,00"
+                                class="w-full pl-11 pr-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition text-sm">
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Observações, Local ou Regras Extras</label>
+                        <textarea id="event-notes" rows="3" oninput="saveEventDetails()" placeholder="Ex: Entrega na casa da vovó às 20h. Não vale vale-presente!"
+                            class="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition text-sm resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-stone-100 flex justify-end">
+                    <button onclick="switchTab('participants')" class="w-full sm:w-auto px-6 py-3.5 bg-pine-700 hover:bg-pine-800 text-white font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                        <span>Avançar para Participantes</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- ETAPA 2: PARTICIPANTES & RESTRIÇÕES                             -->
+        <!-- =============================================================== -->
+        <section id="section-participants" class="hidden fade-in space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Coluna Esquerda: Adicionar & Importar -->
+                <div class="lg:col-span-5 space-y-6">
+                    <!-- Formulário Individual -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80">
+                        <h3 class="font-display text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-5 h-5 text-coral-500"></i>
+                            <span>Adicionar Participante</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-4">Inclua uma dica de presente para ajudar quem tirar essa pessoa.</p>
+
+                        <form onsubmit="handleAddParticipant(event)" class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nome *</label>
+                                <input type="text" id="input-name" required placeholder="Ex: Mariana Costa"
+                                    class="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Dica de Presente / Desejo <span class="text-slate-400 font-normal">(opcional)</span></label>
+                                <input type="text" id="input-wish" placeholder="Ex: Livros de suspense, chocolates, camisa M..."
+                                    class="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 focus:ring-4 focus:ring-coral-500/10 outline-none transition text-sm">
+                            </div>
+                            <button type="submit" class="w-full py-3 px-4 bg-coral-500 hover:bg-coral-600 text-white font-semibold text-sm rounded-xl shadow-sm shadow-coral-500/20 transition flex items-center justify-center gap-2">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>Adicionar à Lista</span>
+                            </button>
+                        </form>
+
+                        <div class="mt-4 pt-4 border-t border-stone-100">
+                            <button onclick="openBulkModal()" class="w-full py-2.5 px-3 bg-stone-100 hover:bg-stone-200/70 text-slate-700 font-medium text-xs rounded-xl transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="list-plus" class="w-4 h-4 text-pine-700"></i>
+                                <span>Importar Vários Nomes de Uma Vez</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card de Restrições -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80">
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="shield-ban" class="w-5 h-5 text-gold-600"></i>
+                                <span>Restrições</span>
+                            </h3>
+                            <span class="text-[11px] font-medium bg-gold-100 text-gold-600 px-2 py-0.5 rounded-full">Opcional</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">Evite que casais ou familiares próximos tirem um ao outro.</p>
+
+                        <div id="restrictions-controls" class="space-y-3">
+                            <div class="grid grid-cols-1 gap-2">
+                                <select id="restrict-giver" class="w-full px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 text-sm outline-none focus:border-coral-500">
+                                    <option value="">Quem vai sortear...</option>
+                                </select>
+                                <div class="flex items-center justify-center text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                    não pode tirar
+                                </div>
+                                <select id="restrict-blocked" class="w-full px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 text-sm outline-none focus:border-coral-500">
+                                    <option value="">Selecione alguém...</option>
+                                </select>
+                            </div>
+
+                            <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none pt-1">
+                                <input type="checkbox" id="restrict-mutual" checked class="rounded text-coral-500 focus:ring-coral-500 w-4 h-4">
+                                <span>Bloquear nos dois sentidos (ex: casal)</span>
+                            </label>
+
+                            <button onclick="addRestriction()" class="w-full py-2.5 px-4 bg-pine-50 hover:bg-pine-100 text-pine-700 font-semibold text-xs rounded-xl border border-pine-200/80 transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                                <span>Adicionar Restrição</span>
+                            </button>
+                        </div>
+
+                        <!-- Lista de Restrições Ativas -->
+                        <div id="restrictions-list" class="mt-4 space-y-2 max-h-48 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Lista de Participantes -->
+                <div class="lg:col-span-7 flex flex-col">
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80 flex-1 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-display text-lg font-bold text-slate-900">Participantes Confirmados</h3>
+                                <p id="participants-subtitle" class="text-xs text-slate-500">Mínimo de 3 participantes para realizar o sorteio.</p>
+                            </div>
+                            <span id="participants-pill" class="px-3 py-1 rounded-full text-xs font-bold bg-pine-50 text-pine-700 border border-pine-200/60">
+                                0 pessoas
+                            </span>
+                        </div>
+
+                        <!-- Lista -->
+                        <div id="participants-list" class="flex-1 space-y-2.5 overflow-y-auto max-h-[460px] pr-1">
+                            <!-- Renderizado via JS -->
+                        </div>
+
+                        <!-- Ação Principal de Sortear -->
+                        <div class="mt-6 pt-5 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <button onclick="switchTab('setup')" class="w-full sm:w-auto px-4 py-3 text-slate-600 hover:bg-stone-100 font-medium text-sm rounded-xl transition">
+                                Voltar
+                            </button>
+                            <button onclick="executeDraw()" id="btn-draw" class="w-full sm:w-auto flex-1 sm:flex-initial px-7 py-3.5 bg-gradient-to-r from-coral-500 to-coral-600 hover:from-coral-600 hover:to-coral-700 text-white font-display font-bold text-sm rounded-xl shadow-lg shadow-coral-500/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                                <i data-lucide="shuffle" class="w-4 h-4"></i>
+                                <span>Realizar Sorteio Agora!</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- ETAPA 3: RESULTADOS E MODOS DE REVELAÇÃO                        -->
+        <!-- =============================================================== -->
+        <section id="section-results" class="hidden fade-in space-y-6">
+            <!-- Estado Vazio (Caso acesse a aba antes de sortear) -->
+            <div id="results-empty" class="bg-white rounded-3xl p-10 text-center shadow-sm border border-stone-200/80">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-coral-50 text-coral-500 flex items-center justify-center mb-4">
+                    <i data-lucide="dices" class="w-8 h-8"></i>
+                </div>
+                <h3 class="font-display text-xl font-bold text-slate-900">O sorteio ainda não foi realizado</h3>
+                <p class="text-sm text-slate-500 max-w-md mx-auto mt-1.5 mb-6">Adicione pelo menos 3 participantes na etapa anterior e clique em sortear para gerar os pares secretos.</p>
+                <button onclick="switchTab('participants')" class="px-6 py-3 bg-coral-500 hover:bg-coral-600 text-white font-semibold text-sm rounded-xl transition">
+                    Ir para Participantes
+                </button>
+            </div>
+
+            <!-- Estado Com Sorteio Concluído -->
+            <div id="results-ready" class="hidden space-y-6">
+                <!-- Banner de Sucesso -->
+                <div class="bg-gradient-to-r from-pine-700 to-pine-800 rounded-3xl p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                            <i data-lucide="check-circle-2" class="w-6 h-6 text-gold-400"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="font-display text-lg sm:text-xl font-bold">Sorteio Realizado com Sucesso!</h2>
+                                <span class="text-[11px] bg-gold-500/20 text-gold-300 border border-gold-400/30 px-2 py-0.5 rounded-full font-semibold">100% Secreto</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-pine-100 mt-0.5">Escolha abaixo como cada pessoa vai descobrir o seu Amigo Oculto.</p>
+                        </div>
+                    </div>
+                    <button onclick="executeDraw(true)" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/15 transition flex items-center gap-1.5 shrink-0">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Sortear Novamente</span>
+                    </button>
+                </div>
+
+                <!-- Seletor de Modo de Revelação -->
+                <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-stone-200/80">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                        <button onclick="setRevealMode('whatsapp')" id="mode-btn-whatsapp" class="p-4 rounded-2xl border-2 border-pine-600 bg-pine-50/60 text-left transition flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-pine-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-sm text-slate-900">Enviar Links / WhatsApp</h4>
+                                <p class="text-xs text-slate-600 mt-0.5">Envie um link secreto individual para cada participante abrir no próprio celular.</p>
+                            </div>
+                        </button>
+
+                        <button onclick="setRevealMode('pass')" id="mode-btn-pass" class="p-4 rounded-2xl border-2 border-stone-200 hover:border-coral-300 bg-white text-left transition flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-coral-100 text-coral-600 flex items-center justify-center shrink-0 mt-0.5">
+                                <i data-lucide="smartphone" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-sm text-slate-900">Passar o Celular (Presencial)</h4>
+                                <p class="text-xs text-slate-600 mt-0.5">Cada pessoa toca no seu nome aqui mesmo, vê quem tirou e oculta antes de passar.</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Aviso sobre Links Locais se estiver rodando em file:// -->
+                    <div id="local-file-warning" class="hidden mb-5 p-3.5 rounded-2xl bg-gold-100/80 border border-gold-400/40 text-xs text-slate-700 flex items-start gap-2.5">
+                        <i data-lucide="info" class="w-4 h-4 text-gold-600 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-semibold">Dica de compartilhamento:</span> Como você abriu este arquivo localmente no dispositivo, hospede o arquivo HTML online (ex: GitHub Pages, Vercel ou Netlify) para que os links funcionem no celular de outras pessoas, ou use o modo <strong>Passar o Celular</strong> ao lado!
+                        </div>
+                    </div>
+
+                    <!-- Lista de Participantes para Revelação / Envio -->
+                    <div id="reveal-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <!-- Renderizado via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="py-6 text-center text-xs text-slate-400">
+        <p>Feito com carinho para confraternizações inesquecíveis • Seus dados ficam salvos apenas no seu navegador.</p>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- MODAIS INTERATIVOS (Edição, Importação em Massa, Passar Celular)      -->
+    <!-- ===================================================================== -->
+
+    <!-- Modal 1: Editar Participante -->
+    <div id="modal-edit" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl card-reveal">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display font-bold text-lg text-slate-900">Editar Participante</h3>
+                <button onclick="closeModal('modal-edit')" class="p-1.5 rounded-lg text-slate-400 hover:bg-stone-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="saveEditedParticipant(event)" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nome *</label>
+                    <input type="text" id="edit-name" required class="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Dica de Presente / Desejo</label>
+                    <input type="text" id="edit-wish" placeholder="Opcional" class="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 outline-none text-sm">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-edit')" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-stone-100">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-coral-500 hover:bg-coral-600 text-white">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Importar Lista Rápida -->
+    <div id="modal-bulk" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl card-reveal">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="font-display font-bold text-lg text-slate-900">Importar Lista Rápida</h3>
+                <button onclick="closeModal('modal-bulk')" class="p-1.5 rounded-lg text-slate-400 hover:bg-stone-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Cole os nomes abaixo, <strong>um por linha</strong>. Você também pode separar a dica de presente usando traço (ex: <em>João - Livros de ficção</em>).</p>
+            <textarea id="bulk-textarea" rows="6" placeholder="Ana Paula - Chocolates&#10;Carlos Eduardo&#10;Beatriz Lima - Caneca criativa&#10;Rafael Santos"
+                class="w-full p-3.5 rounded-xl bg-stone-50 border border-stone-200 focus:bg-white focus:border-coral-500 outline-none text-sm resize-none mb-4"></textarea>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('modal-bulk')" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-stone-100">Cancelar</button>
+                <button onclick="processBulkImport()" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-pine-700 hover:bg-pine-800 text-white">Importar Nomes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Passar o Celular (Revelação Individual Segura) -->
+    <div id="modal-pass-reveal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl card-reveal">
+            <div class="bg-gradient-to-r from-coral-500 to-coral-600 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    <span class="font-display font-bold text-sm">Revelação Privada</span>
+                </div>
+                <button onclick="closePassReveal()" class="p-1 rounded-lg bg-white/15 hover:bg-white/25 text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="p-6 sm:p-8 text-center">
+                <!-- Passo A: Confirmar identidade -->
+                <div id="pass-step-confirm" class="space-y-5">
+                    <div class="w-16 h-16 mx-auto rounded-full bg-gold-100 text-gold-600 flex items-center justify-center">
+                        <i data-lucide="user-check" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Você é:</p>
+                        <h3 id="pass-giver-name" class="font-display text-2xl font-extrabold text-slate-900 mt-1">Nome</h3>
+                        <p class="text-xs text-slate-500 mt-2">Passe o celular apenas para esta pessoa. Clique abaixo somente se ninguém mais estiver vendo a tela.</p>
+                    </div>
+                    <button onclick="confirmPassReveal()" class="w-full py-3.5 px-6 bg-pine-700 hover:bg-pine-800 text-white font-display font-bold text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        <span>Sou eu, revelar meu Amigo Oculto!</span>
+                    </button>
+                </div>
+
+                <!-- Passo B: Mostrar sorteado -->
+                <div id="pass-step-result" class="hidden space-y-5 card-reveal">
+                    <p class="text-xs font-bold uppercase tracking-wider text-coral-600">Seu Amigo Oculto é:</p>
+                    <div class="bg-coral-50/70 border-2 border-coral-200 rounded-2xl p-6">
+                        <h4 id="pass-receiver-name" class="font-display text-3xl font-extrabold text-slate-900">Sorteado</h4>
+                        <div id="pass-wish-container" class="hidden mt-4 pt-3 border-t border-coral-200/70 text-left">
+                            <p class="text-xs font-semibold text-pine-700 mb-1 flex items-center gap-1">
+                                <i data-lucide="gift" class="w-3.5 h-3.5"></i> Dica de presente:
+                            </p>
+                            <p id="pass-receiver-wish" class="text-sm text-slate-700 bg-white p-3 rounded-xl border border-stone-200/80 italic"></p>
+                        </div>
+                    </div>
+                    <button onclick="closePassReveal()" class="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-2xl transition flex items-center justify-center gap-2">
+                        <i data-lucide="eye-off" class="w-4 h-4"></i>
+                        <span>Entendi! Ocultar e Voltar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Confirmação de Limpar Tudo -->
+    <div id="modal-reset" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center card-reveal">
+            <div class="w-12 h-12 mx-auto rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-display font-bold text-lg text-slate-900">Limpar todos os dados?</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-5">Isso apagará o evento, a lista de participantes, as restrições e o sorteio atual.</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="closeModal('modal-reset')" class="py-2.5 px-4 rounded-xl text-sm font-medium text-slate-600 bg-stone-100 hover:bg-stone-200">Cancelar</button>
+                <button onclick="confirmResetAll()" class="py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700">Sim, Limpar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // ESTADO DA APLICAÇÃO & PERSISTÊNCIA LOCAL
+        // =========================================================================
+        const STORAGE_KEY = 'amigo_oculto_festivo_v1';
+
+        let state = {
+            event: {
+                name: '',
+                date: '',
+                budget: '',
+                notes: ''
+            },
+            participants: [], // { id, name, wish }
+            restrictions: [], // { giverId, blockedId }
+            draw: null,       // { giverId: receiverId }
+            revealedLocally: {} // { giverId: true }
+        };
+
+        let currentTab = 'setup';
+        let currentRevealMode = 'whatsapp'; // 'whatsapp' | 'pass'
+        let activePassGiverId = null;
+        let externalPayload = null;
+
+        // =========================================================================
+        // INICIALIZAÇÃO
+        // =========================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // Verifica se a URL possui um hash de revelação secreta (#s=...)
+            if (checkExternalRevealHash()) {
+                return;
+            }
+
+            loadState();
+            renderAll();
+
+            // Aviso caso esteja aberto via file://
+            if (window.location.protocol === 'file:') {
+                document.getElementById('local-file-warning')?.classList.remove('hidden');
+            }
+        });
+
+        window.addEventListener('hashchange', () => {
+            if (!checkExternalRevealHash()) {
+                document.getElementById('external-reveal-view').classList.add('hidden');
+                document.getElementById('organizer-view').classList.remove('hidden');
+                document.getElementById('header-actions').classList.remove('hidden');
+            }
+        });
+
+        // =========================================================================
+        // CODIFICAÇÃO / DECODIFICAÇÃO UTF-8 SEGURA PARA BASE64 (LINKS SECRETOS)
+        // =========================================================================
+        function encodeSecretPayload(obj) {
+            const json = JSON.stringify(obj);
+            const bytes = new TextEncoder().encode(json);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function decodeSecretPayload(base64Url) {
+            try {
+                let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                while (base64.length % 4) base64 += '=';
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                const json = new TextDecoder().decode(bytes);
+                return JSON.parse(json);
+            } catch (e) {
+                console.error('Erro ao decodificar link secreto:', e);
+                return null;
+            }
+        }
+
+        // =========================================================================
+        // LÓGICA DO MODO DE REVELAÇÃO EXTERNA (LINK RECEBIDO NO WHATSAPP)
+        // =========================================================================
+        function checkExternalRevealHash() {
+            const hash = window.location.hash;
+            if (!hash || !hash.startsWith('#s=')) return false;
+
+            const encoded = hash.slice(3);
+            const data = decodeSecretPayload(encoded);
+            if (!data || !data.g || !data.r) return false;
+
+            externalPayload = data;
+
+            // Alterna visualização para a tela festiva de revelação
+            document.getElementById('organizer-view').classList.add('hidden');
+            document.getElementById('header-actions').classList.add('hidden');
+            document.getElementById('external-reveal-view').classList.remove('hidden');
+
+            // Preenche informações do evento e do participante
+            document.getElementById('ext-event-name').textContent = data.e || 'Amigo Oculto';
+            document.getElementById('ext-giver-name').textContent = data.g;
+            document.getElementById('ext-receiver-name').textContent = data.r;
+
+            // Metadados (data e valor)
+            const metaContainer = document.getElementById('ext-event-meta');
+            metaContainer.innerHTML = '';
+            if (data.d) {
+                const formattedDate = formatDateBR(data.d);
+                metaContainer.innerHTML += `<span class="bg-white/15 px-3 py-1 rounded-full">📅 ${escapeHTML(formattedDate)}</span>`;
+            }
+            if (data.b) {
+                metaContainer.innerHTML += `<span class="bg-white/15 px-3 py-1 rounded-full">🎁 Valor: R$ ${escapeHTML(data.b)}</span>`;
+            }
+
+            // Dica de presente
+            if (data.w && data.w.trim()) {
+                document.getElementById('ext-receiver-wish').textContent = data.w;
+                document.getElementById('ext-wish-box').classList.remove('hidden');
+            } else {
+                document.getElementById('ext-wish-box').classList.add('hidden');
+            }
+
+            // Observações do evento
+            if (data.n && data.n.trim()) {
+                document.getElementById('ext-event-notes').textContent = data.n;
+                document.getElementById('ext-notes-box').classList.remove('hidden');
+            } else {
+                document.getElementById('ext-notes-box').classList.add('hidden');
+            }
+
+            // Reseta para o passo de confirmação
+            document.getElementById('ext-step-confirm').classList.remove('hidden');
+            document.getElementById('ext-step-result').classList.add('hidden');
+
+            lucide.createIcons();
+            return true;
+        }
+
+        function revealExternalSecret() {
+            document.getElementById('ext-step-confirm').classList.add('hidden');
+            document.getElementById('ext-step-result').classList.remove('hidden');
+            triggerConfetti();
+        }
+
+        function hideExternalSecret() {
+            document.getElementById('ext-step-result').classList.add('hidden');
+            document.getElementById('ext-step-confirm').classList.remove('hidden');
+        }
+
+        function goHomeFromReveal() {
+            if (window.location.hash.startsWith('#s=')) {
+                history.pushState('', document.title, window.location.pathname + window.location.search);
+                document.getElementById('external-reveal-view').classList.add('hidden');
+                document.getElementById('organizer-view').classList.remove('hidden');
+                document.getElementById('header-actions').classList.remove('hidden');
+                loadState();
+                renderAll();
+            }
+        }
+
+        // =========================================================================
+        // PERSISTÊNCIA & NAVEGAÇÃO ENTRE ABAS
+        // =========================================================================
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('Não foi possível salvar no localStorage:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar dados salvos:', e);
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabs = ['setup', 'participants', 'results'];
+
+            tabs.forEach(t => {
+                const section = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                const circle = btn.querySelector('span');
+
+                if (t === tab) {
+                    section.classList.remove('hidden');
+                    btn.className = 'py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 bg-coral-50 text-coral-700 border border-coral-200/70';
+                    circle.className = 'w-5 h-5 rounded-full bg-coral-500 text-white text-[11px] flex items-center justify-center font-bold';
+                } else {
+                    section.classList.add('hidden');
+                    btn.className = 'py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-600 hover:bg-stone-50';
+                    circle.className = 'w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[11px] flex items-center justify-center font-bold';
+                }
+            });
+
+            if (tab === 'results') {
+                renderResultsSection();
+            }
+            lucide.createIcons();
+        }
+
+        // =========================================================================
+        // DETALHES DO EVENTO
+        // =========================================================================
+        function saveEventDetails() {
+            state.event.name = document.getElementById('event-name').value;
+            state.event.date = document.getElementById('event-date').value;
+            state.event.budget = document.getElementById('event-budget').value;
+            state.event.notes = document.getElementById('event-notes').value;
+            saveState();
+        }
+
+        function renderEventDetails() {
+            document.getElementById('event-name').value = state.event.name || '';
+            document.getElementById('event-date').value = state.event.date || '';
+            document.getElementById('event-budget').value = state.event.budget || '';
+            document.getElementById('event-notes').value = state.event.notes || '';
+        }
+
+        // =========================================================================
+        // GERENCIAMENTO DE PARTICIPANTES
+        // =========================================================================
+        function generateId() {
+            return 'p_' + Math.random().toString(36).substring(2, 9);
+        }
+
+        function handleAddParticipant(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('input-name');
+            const wishInput = document.getElementById('input-wish');
+
+            const name = nameInput.value.trim();
+            const wish = wishInput.value.trim();
+
+            if (!name) return;
+
+            if (state.participants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                showToast(`"${name}" já está na lista! Adicione um sobrenome para diferenciar.`, 'warning');
+                return;
+            }
+
+            state.participants.push({
+                id: generateId(),
+                name,
+                wish
+            });
+
+            // Invalida sorteio anterior caso a lista mude
+            if (state.draw) {
+                state.draw = null;
+                state.revealedLocally = {};
+                showToast('Lista alterada. Lembre-se de realizar um novo sorteio!', 'info');
+            } else {
+                showToast(`${name} adicionado(a)!`, 'success');
+            }
+
+            nameInput.value = '';
+            wishInput.value = '';
+            nameInput.focus();
+
+            saveState();
+            renderParticipants();
+            renderRestrictions();
+        }
+
+        function removeParticipant(id) {
+            state.participants = state.participants.filter(p => p.id !== id);
+            state.restrictions = state.restrictions.filter(r => r.giverId !== id && r.blockedId !== id);
+
+            if (state.draw) {
+                state.draw = null;
+                state.revealedLocally = {};
+            }
+
+            saveState();
+            renderParticipants();
+            renderRestrictions();
+            showToast('Participante removido.', 'info');
+        }
+
+        function openEditModal(id) {
+            const p = state.participants.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-name').value = p.name;
+            document.getElementById('edit-wish').value = p.wish || '';
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
+
+        function saveEditedParticipant(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const name = document.getElementById('edit-name').value.trim();
+            const wish = document.getElementById('edit-wish').value.trim();
+
+            if (!name) return;
+
+            const idx = state.participants.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                state.participants[idx].name = name;
+                state.participants[idx].wish = wish;
+                saveState();
+                renderParticipants();
+                renderRestrictions();
+                if (currentTab === 'results') renderResultsSection();
+                showToast('Participante atualizado!', 'success');
+            }
+            closeModal('modal-edit');
+        }
+
+        function openBulkModal() {
+            document.getElementById('bulk-textarea').value = '';
+            document.getElementById('modal-bulk').classList.remove('hidden');
+            setTimeout(() => document.getElementById('bulk-textarea').focus(), 100);
+        }
+
+        function processBulkImport() {
+            const raw = document.getElementById('bulk-textarea').value;
+            const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+            if (lines.length === 0) {
+                closeModal('modal-bulk');
+                return;
+            }
+
+            let addedCount = 0;
+            lines.forEach(line => {
+                // Permite formato "Nome - Dica de presente"
+                const parts = line.split(/\s+-\s+/);
+                const name = parts[0].trim();
+                const wish = parts.slice(1).join(' - ').trim();
+
+                if (name && !state.participants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                    state.participants.push({
+                        id: generateId(),
+                        name,
+                        wish
+                    });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                state.draw = null;
+                state.revealedLocally = {};
+                saveState();
+                renderParticipants();
+                renderRestrictions();
+                showToast(`${addedCount} participante(s) importado(s)!`, 'success');
+            } else {
+                showToast('Nenhum nome novo encontrado na lista.', 'warning');
+            }
+
+            closeModal('modal-bulk');
+        }
+
+        function renderParticipants() {
+            const container = document.getElementById('participants-list');
+            const count = state.participants.length;
+
+            document.getElementById('badge-count').textContent = count;
+            document.getElementById('participants-pill').textContent = `${count} ${count === 1 ? 'pessoa' : 'pessoas'}`;
+
+            if (count === 0) {
+                container.innerHTML = `
+                    <div class="border-2 border-dashed border-stone-200 rounded-2xl p-8 text-center my-auto">
+                        <div class="w-12 h-12 mx-auto rounded-xl bg-stone-100 text-slate-400 flex items-center justify-center mb-3">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700">Nenhum participante ainda</p>
+                        <p class="text-xs text-slate-500 mt-1">Adicione os nomes ao lado ou clique em <strong>Exemplo Rápido</strong> no topo para testar.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = state.participants.map((p, index) => `
+                <div class="group flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-stone-50/80 hover:bg-white border border-stone-200/70 hover:border-coral-200 transition">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-coral-100 to-gold-100 text-coral-700 font-display font-bold text-sm flex items-center justify-center shrink-0">
+                            ${escapeHTML(p.name.charAt(0).toUpperCase())}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-slate-900 truncate">${escapeHTML(p.name)}</p>
+                            ${p.wish
+                                ? `<p class="text-xs text-pine-700 truncate flex items-center gap-1 mt-0.5"><i data-lucide="gift" class="w-3 h-3 shrink-0"></i> ${escapeHTML(p.wish)}</p>`
+                                : `<p class="text-[11px] text-slate-400 italic mt-0.5">Sem dica de presente</p>`
+                            }
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="openEditModal('${p.id}')" class="p-2 text-slate-400 hover:text-pine-700 hover:bg-pine-50 rounded-xl transition" title="Editar">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="removeParticipant('${p.id}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition" title="Remover">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // =========================================================================
+        // RESTRIÇÕES (QUEM NÃO PODE TIRAR QUEM)
+        // =========================================================================
+        function addRestriction() {
+            const giverId = document.getElementById('restrict-giver').value;
+            const blockedId = document.getElementById('restrict-blocked').value;
+            const isMutual = document.getElementById('restrict-mutual').checked;
+
+            if (!giverId || !blockedId) {
+                showToast('Selecione duas pessoas para criar a restrição.', 'warning');
+                return;
+            }
+            if (giverId === blockedId) {
+                showToast('Ninguém já não pode tirar a si mesmo por padrão!', 'info');
+                return;
+            }
+
+            let added = false;
+            if (!state.restrictions.some(r => r.giverId === giverId && r.blockedId === blockedId)) {
+                state.restrictions.push({ giverId, blockedId });
+                added = true;
+            }
+            if (isMutual && !state.restrictions.some(r => r.giverId === blockedId && r.blockedId === giverId)) {
+                state.restrictions.push({ giverId: blockedId, blockedId: giverId });
+                added = true;
+            }
+
+            if (added) {
+                state.draw = null;
+                state.revealedLocally = {};
+                saveState();
+                renderRestrictions();
+                showToast('Restrição adicionada com sucesso.', 'success');
+            } else {
+                showToast('Essa restrição já está cadastrada.', 'info');
+            }
+        }
+
+        function removeRestriction(index) {
+            state.restrictions.splice(index, 1);
+            state.draw = null;
+            state.revealedLocally = {};
+            saveState();
+            renderRestrictions();
+        }
+
+        function renderRestrictions() {
+            const selectGiver = document.getElementById('restrict-giver');
+            const selectBlocked = document.getElementById('restrict-blocked');
+            const listContainer = document.getElementById('restrictions-list');
+
+            const optionsHTML = state.participants.map(p =>
+                `<option value="${p.id}">${escapeHTML(p.name)}</option>`
+            ).join('');
+
+            selectGiver.innerHTML = `<option value="">Quem vai sortear...</option>` + optionsHTML;
+            selectBlocked.innerHTML = `<option value="">Não pode tirar...</option>` + optionsHTML;
+
+            if (state.restrictions.length === 0) {
+                listContainer.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">Nenhuma restrição configurada.</p>`;
+                return;
+            }
+
+            listContainer.innerHTML = state.restrictions.map((r, idx) => {
+                const giver = state.participants.find(p => p.id === r.giverId);
+                const blocked = state.participants.find(p => p.id === r.blockedId);
+                if (!giver || !blocked) return '';
+
+                return `
+                    <div class="flex items-center justify-between gap-2 text-xs bg-gold-100/60 border border-gold-400/30 px-3 py-2 rounded-xl">
+                        <div class="truncate">
+                            <span class="font-semibold text-slate-800">${escapeHTML(giver.name)}</span>
+                            <span class="text-slate-500 mx-1">✕</span>
+                            <span class="font-semibold text-slate-800">${escapeHTML(blocked.name)}</span>
+                        </div>
+                        <button onclick="removeRestriction(${idx})" class="text-slate-400 hover:text-red-600 p-1 shrink-0" title="Remover restrição">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // =========================================================================
+        // ALGORITMO DE SORTEIO (BACKTRACKING COM SHUFFLE PARA DERANGEMENT VÁLIDO)
+        // =========================================================================
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function findValidSecretSanta(participants, restrictions) {
+            const n = participants.length;
+            if (n < 3) return null;
+
+            // Mapa de opções válidas para cada participante
+            const allowedMap = {};
+            participants.forEach(giver => {
+                const blockedIds = new Set(
+                    restrictions.filter(r => r.giverId === giver.id).map(r => r.blockedId)
+                );
+                blockedIds.add(giver.id); // Nunca pode tirar a si mesmo
+
+                const validReceivers = participants
+                    .filter(receiver => !blockedIds.has(receiver.id))
+                    .map(receiver => receiver.id);
+
+                allowedMap[giver.id] = shuffleArray(validReceivers);
+            });
+
+            // Ordena os participantes pelos que têm MENOS opções válidas primeiro (heurística MRV)
+            // Isso torna o backtracking extremamente rápido mesmo com muitas restrições
+            const orderedGivers = [...participants].sort(
+                (a, b) => allowedMap[a.id].length - allowedMap[b.id].length
+            );
+
+            // Se alguém já começa com 0 opções, é impossível
+            if (orderedGivers.some(g => allowedMap[g.id].length === 0)) {
+                return null;
+            }
+
+            const assignment = {};
+            const usedReceivers = new Set();
+
+            function backtrack(index) {
+                if (index === n) {
+                    return true;
+                }
+
+                const giverId = orderedGivers[index].id;
+                const candidates = allowedMap[giverId];
+
+                for (const receiverId of candidates) {
+                    if (!usedReceivers.has(receiverId)) {
+                        assignment[giverId] = receiverId;
+                        usedReceivers.add(receiverId);
+
+                        if (backtrack(index + 1)) {
+                            return true;
+                        }
+
+                        // Desfaz escolha (backtrack)
+                        delete assignment[giverId];
+                        usedReceivers.delete(receiverId);
+                    }
+                }
+                return false;
+            }
+
+            const success = backtrack(0);
+            return success ? assignment : null;
+        }
+
+        function executeDraw(isRedraw = false) {
+            if (state.participants.length < 3) {
+                showToast('Adicione pelo menos 3 participantes para realizar o sorteio!', 'warning');
+                return;
+            }
+
+            const result = findValidSecretSanta(state.participants, state.restrictions);
+
+            if (!result) {
+                showToast(
+                    'Combinação impossível! As restrições atuais impedem que todos tirem alguém válido. Remova alguma restrição e tente novamente.',
+                    'error'
+                );
+                return;
+            }
+
+            state.draw = result;
+            state.revealedLocally = {};
+            saveState();
+
+            triggerConfetti();
+            showToast(isRedraw ? 'Novo sorteio gerado com sucesso!' : 'Sorteio realizado com sucesso!', 'success');
+            switchTab('results');
+        }
+
+        // =========================================================================
+        // RENDERIZAÇÃO DOS RESULTADOS & REVELAÇÃO
+        // =========================================================================
+        function setRevealMode(mode) {
+            currentRevealMode = mode;
+
+            const btnWa = document.getElementById('mode-btn-whatsapp');
+            const btnPass = document.getElementById('mode-btn-pass');
+
+            if (mode === 'whatsapp') {
+                btnWa.className = 'p-4 rounded-2xl border-2 border-pine-600 bg-pine-50/60 text-left transition flex items-start gap-3.5';
+                btnPass.className = 'p-4 rounded-2xl border-2 border-stone-200 hover:border-coral-300 bg-white text-left transition flex items-start gap-3.5';
+            } else {
+                btnPass.className = 'p-4 rounded-2xl border-2 border-coral-500 bg-coral-50/50 text-left transition flex items-start gap-3.5';
+                btnWa.className = 'p-4 rounded-2xl border-2 border-stone-200 hover:border-pine-300 bg-white text-left transition flex items-start gap-3.5';
+            }
+
+            renderResultsSection();
+        }
+
+        function generateParticipantSecretLink(giverId) {
+            const giver = state.participants.find(p => p.id === giverId);
+            const receiverId = state.draw[giverId];
+            const receiver = state.participants.find(p => p.id === receiverId);
+
+            if (!giver || !receiver) return '';
+
+            const payload = {
+                e: state.event.name || 'Amigo Oculto',
+                d: state.event.date || '',
+                b: state.event.budget || '',
+                n: state.event.notes || '',
+                g: giver.name,
+                r: receiver.name,
+                w: receiver.wish || ''
+            };
+
+            const encoded = encodeSecretPayload(payload);
+            const baseUrl = window.location.href.split('#')[0];
+            return `${baseUrl}#s=${encoded}`;
+        }
+
+        function renderResultsSection() {
+            const emptyEl = document.getElementById('results-empty');
+            const readyEl = document.getElementById('results-ready');
+            const grid = document.getElementById('reveal-cards-grid');
+
+            if (!state.draw || state.participants.length < 3) {
+                emptyEl.classList.remove('hidden');
+                readyEl.classList.add('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            readyEl.classList.remove('hidden');
+
+            grid.innerHTML = state.participants.map(giver => {
+                const isRevealed = !!state.revealedLocally[giver.id];
+
+                if (currentRevealMode === 'whatsapp') {
+                    return `
+                        <div class="p-4 rounded-2xl bg-stone-50/90 border border-stone-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-xl bg-pine-100 text-pine-700 font-display font-bold flex items-center justify-center shrink-0">
+                                    ${escapeHTML(giver.name.charAt(0).toUpperCase())}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-sm text-slate-900 truncate">${escapeHTML(giver.name)}</p>
+                                    <p class="text-[11px] text-slate-500">Link secreto pronto para envio</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button onclick="copySecretLink('${giver.id}')" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-white hover:bg-stone-100 border border-stone-200 text-slate-700 text-xs font-semibold transition flex items-center justify-center gap-1.5" title="Copiar link secreto">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>Copiar Link</span>
+                                </button>
+                                <button onclick="shareWhatsApp('${giver.id}')" class="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5">
+                                    <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                                    <span>WhatsApp</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Modo Passar o Celular
+                    return `
+                        <button onclick="openPassReveal('${giver.id}')" class="p-4 rounded-2xl bg-white hover:bg-coral-50/60 border-2 ${isRevealed ? 'border-pine-200 bg-pine-50/30' : 'border-stone-200 hover:border-coral-400'} text-left transition flex items-center justify-between gap-3 group">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-xl ${isRevealed ? 'bg-pine-100 text-pine-700' : 'bg-coral-100 text-coral-600'} font-display font-bold flex items-center justify-center shrink-0">
+                                    ${escapeHTML(giver.name.charAt(0).toUpperCase())}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-sm text-slate-900 truncate">${escapeHTML(giver.name)}</p>
+                                    <p class="text-[11px] ${isRevealed ? 'text-pine-700 font-medium' : 'text-slate-500'}">
+                                        ${isRevealed ? '✓ Já visualizado neste aparelho' : 'Toque para revelar seu amigo oculto'}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1.5 rounded-xl bg-coral-500 group-hover:bg-coral-600 text-white text-xs font-semibold shrink-0 flex items-center gap-1">
+                                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                <span>Revelar</span>
+                            </span>
+                        </button>
+                    `;
+                }
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // =========================================================================
+        // AÇÕES DE COMPARTILHAMENTO (WHATSAPP E CLIPBOARD)
+        // =========================================================================
+        function copySecretLink(giverId) {
+            const link = generateParticipantSecretLink(giverId);
+            if (!link) return;
+
+            const tempInput = document.createElement('input');
+            tempInput.value = link;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            const giver = state.participants.find(p => p.id === giverId);
+            showToast(`Link secreto de ${giver.name} copiado!`, 'success');
+        }
+
+        function shareWhatsApp(giverId) {
+            const giver = state.participants.find(p => p.id === giverId);
+            const link = generateParticipantSecretLink(giverId);
+            if (!giver || !link) return;
+
+            const eventTitle = state.event.name ? `*${state.event.name}*` : '*nosso Amigo Oculto*';
+            let message = `🎁 Olá, *${giver.name}*! O sorteio do ${eventTitle} já foi realizado!\n\n`;
+            message += `🔒 Clique no seu link secreto abaixo para descobrir quem você tirou (não compartilhe com ninguém):\n${link}`;
+
+            if (state.event.date || state.event.budget) {
+                message += `\n\n📌 *Detalhes:*`;
+                if (state.event.date) message += `\n• Data: ${formatDateBR(state.event.date)}`;
+                if (state.event.budget) message += `\n• Valor sugerido: R$ ${state.event.budget}`;
+            }
+
+            const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        // =========================================================================
+        // MODAL PASSAR O CELULAR
+        // =========================================================================
+        function openPassReveal(giverId) {
+            const giver = state.participants.find(p => p.id === giverId);
+            const receiverId = state.draw[giverId];
+            const receiver = state.participants.find(p => p.id === receiverId);
+            if (!giver || !receiver) return;
+
+            activePassGiverId = giverId;
+            document.getElementById('pass-giver-name').textContent = giver.name;
+            document.getElementById('pass-receiver-name').textContent = receiver.name;
+
+            if (receiver.wish && receiver.wish.trim()) {
+                document.getElementById('pass-receiver-wish').textContent = receiver.wish;
+                document.getElementById('pass-wish-container').classList.remove('hidden');
+            } else {
+                document.getElementById('pass-wish-container').classList.add('hidden');
+            }
+
+            document.getElementById('pass-step-confirm').classList.remove('hidden');
+            document.getElementById('pass-step-result').classList.add('hidden');
+            document.getElementById('modal-pass-reveal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function confirmPassReveal() {
+            document.getElementById('pass-step-confirm').classList.add('hidden');
+            document.getElementById('pass-step-result').classList.remove('hidden');
+
+            if (activePassGiverId) {
+                state.revealedLocally[activePassGiverId] = true;
+                saveState();
+            }
+            triggerConfetti();
+        }
+
+        function closePassReveal() {
+            document.getElementById('modal-pass-reveal').classList.add('hidden');
+            activePassGiverId = null;
+            renderResultsSection();
+        }
+
+        // =========================================================================
+        // UTILITÁRIOS, DEMO & RESET
+        // =========================================================================
+        function renderAll() {
+            renderEventDetails();
+            renderParticipants();
+            renderRestrictions();
+            renderResultsSection();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function openResetModal() {
+            document.getElementById('modal-reset').classList.remove('hidden');
+        }
+
+        function confirmResetAll() {
+            state = {
+                event: { name: '', date: '', budget: '', notes: '' },
+                participants: [],
+                restrictions: [],
+                draw: null,
+                revealedLocally: {}
+            };
+            saveState();
+            renderAll();
+            switchTab('setup');
+            closeModal('modal-reset');
+            showToast('Todos os dados foram limpos.', 'info');
+        }
+
+        function fillDemoData() {
+            const p1 = generateId(), p2 = generateId(), p3 = generateId(), p4 = generateId(), p5 = generateId(), p6 = generateId();
+            state = {
+                event: {
+                    name: 'Amigo Oculto da Galera 2026',
+                    date: '2026-12-20',
+                    budget: '80,00',
+                    notes: 'Confraternização às 19h30. Levar um prato de doce ou salgado!'
+                },
+                participants: [
+                    { id: p1, name: 'Lucas Almeida', wish: 'Livros de ficção científica ou café especial' },
+                    { id: p2, name: 'Mariana Souza', wish: 'Velas aromáticas, skincare ou chocolates' },
+                    { id: p3, name: 'Pedro Henrique', wish: 'Camiseta geek tamanho G ou jogos de tabuleiro' },
+                    { id: p4, name: 'Camila Rocha', wish: 'Caneca térmica ou acessórios de viagem' },
+                    { id: p5, name: 'Rafael Mendes', wish: 'Fones de ouvido ou cervejas artesanais' },
+                    { id: p6, name: 'Juliana Costa', wish: 'Plantinhas suculentas ou vale-livraria' }
+                ],
+                restrictions: [
+                    { giverId: p1, blockedId: p2 },
+                    { giverId: p2, blockedId: p1 }
+                ],
+                draw: null,
+                revealedLocally: {}
+            };
+            saveState();
+            renderAll();
+            switchTab('participants');
+            showToast('Dados de exemplo carregados! Clique em "Realizar Sorteio Agora".', 'success');
+        }
+
+        function formatDateBR(isoDate) {
+            if (!isoDate) return '';
+            const [y, m, d] = isoDate.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[m]);
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 70,
+                    spread: 65,
+                    origin: { y: 0.65 },
+                    colors: ['#E85A4F', '#2D6A4F', '#E9C46A', '#F4A261']
+                });
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-pine-800 text-white border-pine-600',
+                warning: 'bg-amber-600 text-white border-amber-500',
+                error: 'bg-red-600 text-white border-red-500',
+                info: 'bg-slate-800 text-white border-slate-700'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                warning: 'alert-circle',
+                error: 'x-circle',
+                info: 'info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-lg border text-xs font-medium fade-in ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i>
+                <span class="leading-snug">${escapeHTML(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-6px)';
+                toast.style.transition = 'all 0.25s ease';
+                setTimeout(() => toast.remove(), 250);
+            }, 3800);
+        }
+    </script>
+</body>
+</html>
